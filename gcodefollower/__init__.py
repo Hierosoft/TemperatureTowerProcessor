@@ -7,14 +7,15 @@ This program changes and inserts temperatures into gcode that builds a
 temperature tower.
 Copyright (C) 2019  Jake "Poikilos" Gustafson
 '''
-import sys
-import os
 import copy
-import shutil
-import json
 import decimal
 import inspect
+import json
 import math
+import os
+import re
+import shutil
+import sys
 
 from decimal import Decimal
 
@@ -293,6 +294,11 @@ def changed_cmd(cmd, key, value, precision=5):
         return cmd
     return meta_to_cmd(meta)
 
+_digit_pattern = re.compile(r'\d')
+
+def has_numbers(inputString):
+    return bool(_digit_pattern.search(inputString))
+
 
 def get_cmd_meta(cmd):
     '''
@@ -342,7 +348,19 @@ def get_cmd_meta(cmd):
                 functionStr = ""
             else:
                 functionStr = arg
-        if len(arg) > 1:
+        if not has_numbers(parts[i]):
+            # parts[i].strip() == "TIMELAPSE_TAKE_FRAME":
+            # or TIMELAPSE_RENDER
+            print("Warning: allowing literal \"{}\""
+                  " (assuming it is an extended command)"
+                  .format(parts[i]))
+            fn_strings = parts
+            if len(fn_strings) == 1:
+                cmd_meta.append(fn_strings+[None])
+            else:
+                cmd_meta.append(fn_strings)
+            break
+        elif len(arg) > 1:
             k, v = arg[0], arg[1:]
             if functionStr == "M117":
                 displayStr = " ".join(parts[1:])
@@ -379,6 +397,10 @@ def cmd_meta_dict(cmd_meta):
                       " 2 parts: {} in {}"
                       "".format(pair, cmd_meta))
                 metaD['function'] = ''  # prevent gathering it again
+            if pair[1] is None:
+                metaD['function'] = pair[0]
+                # Extended syntax such as TIMELAPSE_TAKE_FRAME
+                #   (no number included in command)
             else:
                 metaD['function'] = ''.join(pair)
         if len(pair) == 2:
@@ -1767,11 +1789,13 @@ class GCodeFollower:
                             previous_dst_line = line
                         continue
                     # cmdStr ''.join(cmd_meta[0])  # such as "M117"
-                    try:
-                        code_number = int(cmd_meta[0][1])
-                    except ValueError as ex:
-                        print("Error in cmd_meta: {}".format(cmd_meta))
-                        raise ex
+                    if cmd_meta[0][1] is not None:
+                        try:
+                            code_number = int(cmd_meta[0][1])
+                        except ValueError as ex:
+                            print("Error in cmd_meta: {}".format(cmd_meta))
+                            raise ex
+                    # else is a text command with no number, such as TIMELAPSE_TAKE_FRAME
 
                     if cmd_meta[0][0] == "G":
                         if given_values.get('E') is not None:
