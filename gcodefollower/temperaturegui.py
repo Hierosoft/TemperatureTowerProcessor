@@ -191,7 +191,8 @@ class ConfigurationFrame(ttk.Frame):
         #       + gcode.getVar("template_gcode_path"))
         self.templateGCodePath.set(gcode.getVar("template_gcode_path"))
 
-    def echo(self, msg):
+    def echo(self, *args):
+        msg = args[0] if len(args) > 0 else ""
         if len(msg) > 0:
             print("STATUS: " + msg)
             self.statusV.set(msg)
