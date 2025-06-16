@@ -84,6 +84,34 @@ class ConfigurationFrame(ttk.Frame):
                                   textvariable=self.templateGCodePath)
         self.tgcEntry.grid(column=1, columnspan=2, row=row, sticky=tk.E)
         row += 1
+
+        self.startZVar = tk.StringVar()
+        self.startZVar.set("2.8")
+        self.startZLabel = ttk.Label(self, text="Start Z (mm):")
+        self.startZLabel.grid(column=0, row=row, sticky=tk.E)
+        self.startZEntry = ttk.Entry(self, width=35,
+                                     textvariable=self.startZVar)
+        self.startZEntry.grid(column=1, columnspan=2, row=row, sticky=tk.E)
+        row += 1
+
+        self.tierHeightVar = tk.StringVar()
+        self.tierHeightVar.set("10")
+        self.tierHeightLabel = ttk.Label(self, text="Tier Height (mm):")
+        self.tierHeightLabel.grid(column=0, row=row, sticky=tk.E)
+        self.tierHeightEntry = ttk.Entry(self, width=35,
+                                         textvariable=self.tierHeightVar)
+        self.tierHeightEntry.grid(column=1, columnspan=2, row=row, sticky=tk.E)
+        row += 1
+
+        self.tierCountVar = tk.StringVar()
+        self.tierCountVar.set("10")
+        self.tierCountLabel = ttk.Label(self, text="Tier Count:")
+        self.tierCountLabel.grid(column=0, row=row, sticky=tk.E)
+        self.tierCountEntry = ttk.Entry(self, width=35,
+                                         textvariable=self.tierCountVar)
+        self.tierCountEntry.grid(column=1, columnspan=2, row=row, sticky=tk.E)
+        row += 1
+
         self.minLabel = ttk.Label(self, text="Minimum Temperature (C):")
         self.minLabel.grid(column=0, row=row, sticky=tk.E)
         self.minEntry = ttk.Entry(self, width=35,
@@ -176,6 +204,13 @@ class ConfigurationFrame(ttk.Frame):
                               self.temperatureVs[i].get())
         gcode.setVar("template_gcode_path",
                      self.templateGCodePath.get())
+        startZ = float(self.startZVar.get())
+        tierHeight = float(self.tierHeightVar.get())
+        gcode.setVar("level_height", tierHeight)
+        tierCount = int(self.tierCountVar.get())
+        gcode.setVar("level_count", tierCount)
+        gcode.setVar("special_heights[0]",
+                     startZ + tierHeight)
 
     def pullSettings(self):
         '''
