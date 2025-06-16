@@ -944,6 +944,10 @@ class GCodeFollower:
     def loadSettings(self):
         echo0("Loading settings...")
         self.error = None
+        if not os.path.isfile(GCodeFollower._settingsPath):
+            print("No settings file \"{}\""
+                  .format(GCodeFollower._settingsPath), file=sys.stderr)
+            return
         with open(GCodeFollower._settingsPath) as ins:
             tmp_settings = json.load(ins)
             # Use a temp file in case the file is missing any settings.
