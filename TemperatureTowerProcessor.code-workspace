@@ -6,8 +6,34 @@
 	],
 	"settings": {
 		"cSpell.words": [
+			"9Crounding",
+			"columnspan",
+			"dant_shown",
+			"dnlh_shown",
+			"dnnh_shown",
+			"dwfnh_shown",
+			"ENOMAKER",
+			"gcfmesh",
+			"gcode",
+			"gcodefollower",
+			"Gustafson",
+			"HATCHBOX",
+			"hotend",
 			"Klipper",
-			"TIMELAPSE"
+			"McMabers",
+			"Murach",
+			"padx",
+			"pady",
+			"Poikilos",
+			"Prusa",
+			"prusaslicer",
+			"remi.lapeyre",
+			"Slic3r",
+			"temperaturegui",
+			"TIMELAPSE",
+			"tmprs",
+			"wraplength",
+			"Zeytinci"
 		]
 	}
 }

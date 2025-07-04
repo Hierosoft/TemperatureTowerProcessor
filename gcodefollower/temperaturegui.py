@@ -9,14 +9,8 @@ from __future__ import print_function
 from __future__ import division
 import os
 import sys
-import decimal
-from decimal import Decimal
 import threading
-try:
-    import Tkinter as tk
-    import ttk
-except ImportError as ex2:
-    # python 3
+if sys.version_info.major >= 3:
     try:
         import tkinter as tk
         from tkinter import ttk
@@ -27,6 +21,10 @@ except ImportError as ex2:
         print()
         print()
         sys.exit(1)
+else:
+    # Python 2
+    import Tkinter as tk  # type:ignore
+    import ttk  # type:ignore
 
 from gcodefollower import (
     GCodeFollower,
@@ -108,7 +106,7 @@ class ConfigurationFrame(ttk.Frame):
         self.tierCountLabel = ttk.Label(self, text="Tier Count:")
         self.tierCountLabel.grid(column=0, row=row, sticky=tk.E)
         self.tierCountEntry = ttk.Entry(self, width=35,
-                                         textvariable=self.tierCountVar)
+                                        textvariable=self.tierCountVar)
         self.tierCountEntry.grid(column=1, columnspan=2, row=row, sticky=tk.E)
         row += 1
 

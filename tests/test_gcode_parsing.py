@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import decimal
 from decimal import Decimal
 
 

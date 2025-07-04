@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-from __future__ import print_function
-from __future__ import division
-
 '''
 This program changes and inserts temperatures into gcode that builds a
 temperature tower.
 Copyright (C) 2019  Jake "Poikilos" Gustafson
 '''
-import copy
+from __future__ import print_function
+from __future__ import division
 import decimal
 import inspect
 import json
@@ -238,6 +236,25 @@ def encVal(v):
 
 
 def modify_cmd_meta(meta, key, value, precision=5):
+    """Modify G-code command metadata.
+
+    Args:
+        meta (List[List[Any]]): A list of arguments (such as lexed &
+            split by get_cmd_meta), where the first element is a command
+            such as ['G', '1']
+        key (str): Name of the argument to set, such as "S" in "S1".
+        value (Any): The new value (such as "1" in "S1")
+        precision (int, optional): Number of decimal places. Defaults to
+            5.
+
+    Raises:
+        ValueError: If the key has no value in the original command.
+            (so that value should not be changed, or should not be
+            changed in that case).
+
+    Returns:
+        bool: True if could modify, False if not.
+    """
     for pair in meta:
         if pair[0] != key:
             continue
@@ -245,7 +262,7 @@ def modify_cmd_meta(meta, key, value, precision=5):
             raise ValueError(
                 "The key has no param in the original command `{}`,"
                 " so the key '{}' was left unchanged for safety."
-                "".format(cmd, key)
+                "".format(meta, key)
             )
         if isinstance(value, float) or isinstance(value, Decimal):
             # decimal_format = "{:."+str(precision)+"f}"
@@ -650,9 +667,9 @@ class GCodeFollower:
         # The first (minimum) value is at Z0:
         # self.setRangeVars("temperature", name, 240, 255)
         # self.setRangeVars("temperature", name, 190, 210)
-        # NOTE: [Hatchbox
+        # NOTE: [HATCHBOX
         # PLA](https://www.amazon.com/gp/product/B00J0GMMP6)
-        # has the temperature 180-210, but 180 underextrudes unusably
+        # has the temperature 180-210, but 180 under-extrudes unusably
         # (and doesn't adhere to the bed well [even 60C black diamond]).
 
         # G-Code reference:
@@ -821,7 +838,7 @@ class GCodeFollower:
         try:
             with open(GCodeFollower._settingsDocPath, 'w') as outs:
                 self.saveDocumentationTo(outs)
-        except e:
+        except Exception as e:
             os.remove(GCodeFollower._settingsDocPath)
             raise e
 
@@ -1095,7 +1112,7 @@ class GCodeFollower:
                         outs.write(msg)
                     notePathMsg = ". See 'README.md'."
                     # See '" + os.path.abspath(notePath) + "'
-                except e:
+                except Exception as e:
                     exType, exMessage, exTraceback = sys.exc_info()
                     if verbose:
                         print(exMessage)
@@ -1400,11 +1417,11 @@ class GCodeFollower:
                       ''.format(cmd_meta))
             else:
                 S = float(S)
-                heatupTime = self.getToolSecRelTemp(S)
-                self._estS += heatupTime
+                heatUpTime = self.getToolSecRelTemp(S)
+                self._estS += heatUpTime
                 oldS = self.getToolTemperature()
-                debug("_estSec += {} tool heatup time from {} to {}"
-                      "".format(heatupTime, oldS, S))
+                debug("_estSec += {} tool heat up time from {} to {}"
+                      "".format(heatUpTime, oldS, S))
                 self.setToolTemperature(S)
         elif f == "M82":
             # Set extrusion to absolute mode
@@ -1443,17 +1460,17 @@ class GCodeFollower:
             # such as {'G': '28'}
             oldTS = self.getToolTemperature()
             T_S = self.autoHomeToolTemperature
-            toolHeatupTime = self.getToolSecRelTemp(T_S)
-            self._estS += toolHeatupTime
-            debug("_estSec += {} tool heatup time from {} to {} auto"
-                  "".format(toolHeatupTime, oldTS, T_S))
+            toolHeatUpTime = self.getToolSecRelTemp(T_S)
+            self._estS += toolHeatUpTime
+            debug("_estSec += {} tool heat up time from {} to {} auto"
+                  "".format(toolHeatUpTime, oldTS, T_S))
             self.setToolTemperature(T_S)
             oldBS = self.getBedTemperature()
             B_S = self.autoHomeBedTemperature
-            bedHeatupTime = self.getBedSecRelTemp(B_S)
-            self._estS += bedHeatupTime
-            debug("  _estSec += {} bed heatup time from {} to {} auto"
-                  "".format(bedHeatupTime, oldBS, B_S))
+            bedHeatUpTime = self.getBedSecRelTemp(B_S)
+            self._estS += bedHeatUpTime
+            debug("  _estSec += {} bed heat up time from {} to {} auto"
+                  "".format(bedHeatUpTime, oldBS, B_S))
             self.setBedTemperature(B_S)
             self._estS += self.autoHomeMoveTime
             debug("  _estSec += {} autoHomeMoveTime"
@@ -1466,10 +1483,10 @@ class GCodeFollower:
             B_S = meta.get('S')
             if B_S is not None:
                 B_S = float(B_S)
-                bedHeatupTime = self.getBedSecRelTemp(B_S)
-                self._estS += bedHeatupTime
-                debug("_estSec += {} bed heatup time from {} to {}"
-                      "".format(bedHeatupTime, oldBS, B_S))
+                bedHeatUpTime = self.getBedSecRelTemp(B_S)
+                self._estS += bedHeatUpTime
+                debug("_estSec += {} bed heat up time from {} to {}"
+                      "".format(bedHeatUpTime, oldBS, B_S))
                 self.setBedTemperature(B_S)
             else:
                 # TODO: see if self.getBedTemperature differs from the
@@ -1487,7 +1504,7 @@ class GCodeFollower:
             # - {'G': '1', 'Y': '0.0', 'F': '250.0'}
             # Caveats:
             # - "Marlin 2.0 introduces an option to maintain a
-            #   separate default feedrate for G0"
+            #   separate default feed rate for G0"
             #   -<https://marlinfw.org/docs/gcode/G000-G001.html>
             # - "Coordinates are given in millimeters by default. Units
             #   may be set to inches by G20."
@@ -1527,11 +1544,11 @@ class GCodeFollower:
             F = meta.get('F')  # mm/minute
             tool = self.emuState['tool']
             if F is None:
-                oldF = self.emuState['tools'][tool].get('feedrate')
+                oldF = self.emuState['tools'][tool].get('feed_rate')
                 if oldF is not None:
                     F = oldF
                 else:
-                    echo0("WARNING: The feedrate is unknown at {}."
+                    echo0("WARNING: The feed_rate is unknown at {}."
                           "".format(cmd_meta))
                 return
             else:
@@ -1550,11 +1567,11 @@ class GCodeFollower:
                     debug("  self.emuState['position_mode']: {}"
                           "".format(self.emuState['position_mode']))
                 self.emuState['position'] = newPos
-                self.emuState['tools'][tool]['feedrate'] = F
-                # ^ A servo feedrate is set below if not returning.
+                self.emuState['tools'][tool]['feed_rate'] = F
+                # ^ A servo feed_rate is set below if not returning.
                 return
             servo = self.emuState['extruder']
-            self.emuState['servos'][servo]['feedrate'] = F
+            self.emuState['servos'][servo]['feed_rate'] = F
 
             eDiff = 0.0
             E = meta.get('E')
