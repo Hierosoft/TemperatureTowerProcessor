@@ -334,32 +334,44 @@ def get_cmd_meta(cmd):
     if cmd[0] == ";":
         # comment
         return None
-    while "\t" in cmd:
-        cmd = cmd.replace("\t", " ")
-    while "  " in cmd:
-        cmd = cmd.replace("  ", " ")
-    parts = cmd.split(" ")
+    parts = cmd.split()
     cmd_meta = []
     functionStr = None
+    macro = None
     for i in range(len(parts)):
-        arg = parts[i].strip()
+        arg = parts[i]
         if functionStr is None:
             if len(arg) < 1:
                 functionStr = ""
             else:
                 functionStr = arg
-        if not has_numbers(parts[i]):
-            # parts[i].strip() == "TIMELAPSE_TAKE_FRAME":
-            # or TIMELAPSE_RENDER
+        if macro is not None:
+            klipperArgEndIdx = arg.find("=")
+            # if klipperArgEndIdx > -1
+            assert klipperArgEndIdx > 0
+            # NOTE: *include* = as a special flag
+            #   so caller knows it is not a G-code
+            #   command.
+            cmd_meta.append([
+                arg[:klipperArgEndIdx+1], # +1 to *keep* '=' as flag
+                arg[klipperArgEndIdx+1:]
+            ])
+        elif not has_numbers(arg):
+            # arg.strip() == "TIMELAPSE_TAKE_FRAME":
+            # or TIMELAPSE_RENDER, BED_MESH_PROFILE, etc
+            assert i == 0, \
+                "misplaced macro {} in {}".format(repr(arg), parts)
             print("Warning: allowing literal \"{}\""
-                  " (assuming it is an extended command)"
-                  .format(parts[i]))
-            fn_strings = parts
-            if len(fn_strings) == 1:
-                cmd_meta.append(fn_strings+[None])
-            else:
-                cmd_meta.append(fn_strings)
-            break
+                  " (assuming it is a Klipper-style macro)"
+                  .format(arg))
+            cmd_meta.append([arg,])
+            macro = arg
+            # fn_strings = parts
+            # if len(fn_strings) == 1:
+            #     cmd_meta.append(fn_strings+[None])
+            # else:
+            #     cmd_meta.append(fn_strings)
+            # break
         elif len(arg) > 1:
             k, v = arg[0], arg[1:]
             if functionStr == "M117":
@@ -397,10 +409,11 @@ def cmd_meta_dict(cmd_meta):
                       " 2 parts: {} in {}"
                       "".format(pair, cmd_meta))
                 metaD['function'] = ''  # prevent gathering it again
-            if pair[1] is None:
+            if len(pair) == 1:
+                # Klipper-style macro
+                #   such as TIMELAPSE_TAKE_FRAME
+                #   (no number included in command).
                 metaD['function'] = pair[0]
-                # Extended syntax such as TIMELAPSE_TAKE_FRAME
-                #   (no number included in command)
             else:
                 metaD['function'] = ''.join(pair)
         if len(pair) == 2:
@@ -1789,15 +1802,25 @@ class GCodeFollower:
                             previous_dst_line = line
                         continue
                     # cmdStr ''.join(cmd_meta[0])  # such as "M117"
-                    if cmd_meta[0][1] is not None:
+                    # Example cmd_meta=[['G', '4'], ['P', '100']]
+                    if len(cmd_meta[0]) == 1:
+                        # Klipper-style macro
+                        pass
+                    elif cmd_meta[0][1] is not None:
                         try:
                             code_number = int(cmd_meta[0][1])
                         except ValueError as ex:
                             print("Error in cmd_meta: {}".format(cmd_meta))
                             raise ex
-                    # else is a text command with no number, such as TIMELAPSE_TAKE_FRAME
 
-                    if cmd_meta[0][0] == "G":
+                    if len(cmd_meta[0]) == 1:
+                        # Klipper-style macro
+                        # such as TIMELAPSE_TAKE_FRAME
+                        self.addSec(line)
+                        outs.write(original_line)
+                        previous_dst_line = line
+                        pass
+                    elif cmd_meta[0][0] == "G":
                         if given_values.get('E') is not None:
                             would_extrude = True
                             # if (comment is not None) or
